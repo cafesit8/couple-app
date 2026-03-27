@@ -1,0 +1,88 @@
+import type { Photo } from '../types'
+
+export const photos: Photo[] = [
+  {
+    id: 1,
+    src: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=640&q=80',
+    titulo: 'Viaje a Maui',
+    fecha: 'Oct 2023',
+    favorita: true,
+  },
+  {
+    id: 2,
+    src: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=640&q=80',
+    titulo: 'Cena de Primer Aniversario',
+    fecha: 'Dic 2022',
+    favorita: false,
+  },
+  {
+    id: 3,
+    src: 'https://images.unsplash.com/photo-1501901609772-df0848060b33?w=640&q=80',
+    titulo: 'Concierto de Coldplay',
+    fecha: 'May 2023',
+    favorita: true,
+  },
+  {
+    id: 4,
+    src: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=640&q=80',
+    titulo: 'Mercado Navideño',
+    fecha: 'Dic 2023',
+    favorita: false,
+  },
+  {
+    id: 5,
+    src: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=640&q=80',
+    titulo: 'Nuestra Primera Excursión',
+    fecha: 'Sep 2022',
+    favorita: true,
+  },
+  {
+    id: 6,
+    src: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=640&q=80',
+    titulo: 'Tarde en el Parque',
+    fecha: 'Mar 2023',
+    favorita: false,
+  },
+  {
+    id: 7,
+    src: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=640&q=80',
+    titulo: 'Atardecer en la Playa',
+    fecha: 'Jul 2023',
+    favorita: true,
+  },
+  {
+    id: 8,
+    src: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=640&q=80',
+    titulo: 'Paseo en Bote',
+    fecha: 'Ago 2023',
+    favorita: false,
+  },
+  {
+    id: 9,
+    src: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=640&q=80',
+    titulo: 'Caminata en la Montaña',
+    fecha: 'Jun 2023',
+    favorita: false,
+  },
+  {
+    id: 10,
+    src: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=640&q=80',
+    titulo: 'Noche de Luces',
+    fecha: 'Nov 2023',
+    favorita: true,
+  },
+  {
+    id: 11,
+    src: 'https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?w=640&q=80',
+    titulo: 'Café por la Mañana',
+    fecha: 'Ene 2024',
+    favorita: false,
+  },
+  {
+    id: 12,
+    src: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=640&q=80',
+    titulo: 'Noche Estrellada',
+    fecha: 'Feb 2024',
+    favorita: true,
+  },
+]

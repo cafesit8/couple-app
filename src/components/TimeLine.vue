@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref } from "vue"
 
 type TimelineItem = {
   image: string
@@ -11,7 +11,7 @@ const props = defineProps<{
   items: TimelineItem[]
 }>()
 
-const imageOrientations = ref<{ [key: string]: 'horizontal' | 'vertical' }>({})
+const imageOrientations = ref<{ [key: string]: "horizontal" | "vertical" }>({})
 
 const sortedItems = computed(() =>
   [...props.items].sort(
@@ -20,29 +20,31 @@ const sortedItems = computed(() =>
 )
 
 const formatDate = (date: string) =>
-  new Intl.DateTimeFormat('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  new Intl.DateTimeFormat("es-ES", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   }).format(new Date(date))
 
 const checkImageOrientation = (src: string, event: Event) => {
   const img = event.target as HTMLImageElement
   const isHorizontal = img.width > img.height
-  imageOrientations.value[src] = isHorizontal ? 'horizontal' : 'vertical'
+  imageOrientations.value[src] = isHorizontal ? "horizontal" : "vertical"
 }
 
 const getObjectClass = (src: string) => {
-  return imageOrientations.value[src] === 'horizontal' 
-    ? 'h-full object-cover' 
-    : 'h-32 object-contain'
+  return imageOrientations.value[src] === "horizontal"
+    ? "h-full object-cover"
+    : "h-32 object-contain"
 }
 </script>
 
 <template>
-  <div class="relative mx-auto max-w-5xl overflow-auto">
+  <div class="relative mx-auto max-w-5xl lg:gap-0 gap-6 flex flex-col">
     <!-- línea central -->
-    <div class="absolute left-1/2 top-0 h-full w-px bg-[#dc9d8d] -translate-x-1/2"></div>
+    <div
+      class="absolute left-1/2 top-0 h-full w-px bg-[#dc9d8d] -translate-x-1/2"
+    ></div>
 
     <div
       v-for="(item, index) in sortedItems"
@@ -50,10 +52,11 @@ const getObjectClass = (src: string) => {
       class="timeline-item"
       :class="index % 2 === 0 ? 'left' : 'right'"
     >
-
       <!-- card -->
       <article class="card animate-on-scroll">
-        <picture class="overflow-hidden h-36 rounded-lg flex items-center justify-center bg-gray-100">
+        <picture
+          class="overflow-hidden h-36 rounded-lg flex items-center justify-center bg-gray-100"
+        >
           <img
             :src="item.image"
             alt=""
@@ -90,7 +93,7 @@ const getObjectClass = (src: string) => {
 }
 
 .timeline-item.left .card::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   right: 100%;
@@ -100,6 +103,10 @@ const getObjectClass = (src: string) => {
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
   border-right: 12px solid white;
+
+  @media (max-width: 600px) {
+    display: none;
+  }
 }
 
 .timeline-item.right {
@@ -108,7 +115,7 @@ const getObjectClass = (src: string) => {
 }
 
 .timeline-item.right .card::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 100%;
@@ -118,14 +125,22 @@ const getObjectClass = (src: string) => {
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
   border-left: 12px solid white;
+
+  @media (max-width: 600px) {
+    display: none;
+  }
 }
 /* card */
 .card {
-  width: 17rem;
+  width: 16rem;
   background: white;
   border-radius: 1rem;
   padding: 0.5rem;
   box-shadow: 0 10px 25px -10px rgb(0 0 0 / 0.15);
+
+  @media (max-width: 600px) {
+    width: 14rem;
+  }
 }
 
 /* 🔥 animación al hacer scroll */
