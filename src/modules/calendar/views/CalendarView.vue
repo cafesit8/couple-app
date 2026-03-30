@@ -1,24 +1,17 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
-import { calendarEvents } from '../data/events'
 import { useCalendar } from '../composables/useCalendar'
-import CalendarHeader from '../components/CalendarHeader.vue'
 import CalendarGrid from '../components/CalendarGrid.vue'
 import EventPanel from '../components/EventPanel.vue'
 
 const {
-  selectedDate,
-  monthLabel,
-  prevMonth,
-  nextMonth,
-  getEventsForDate,
-  formatSelectedDate,
-} = useCalendar(calendarEvents)
-
-const selectedEvents = computed(() => {
-  if (!selectedDate.value) return []
-  return getEventsForDate(selectedDate.value)
-})
+  getSelectedDate,
+  createEvent,
+  getOrCreateSharedCalendarId,
+  dateSelected,
+  events,
+  eventSelected,
+  isLoading
+} = useCalendar()
 </script>
 
 <template>
@@ -26,22 +19,21 @@ const selectedEvents = computed(() => {
     <div class="calendar-layout">
       <!-- Panel izquierdo: Calendario -->
       <div class="calendar-card">
-        <CalendarHeader
-          :month-label="monthLabel"
-          @prev="prevMonth"
-          @next="nextMonth"
-        />
         <CalendarGrid
-          :events="[]"
+          :date-selected="dateSelected"
+          :events="events"
+          @selectDate="getSelectedDate"
         />
       </div>
 
       <!-- Panel derecho: Detalles -->
       <div class="details-card">
-        <EventPanel
-          :selected-date="selectedDate"
-          :events="selectedEvents"
-          :format-date="formatSelectedDate"
+        <EventPanel 
+          :selected-date="dateSelected" 
+          :event-selected="eventSelected"
+          :is-loading="isLoading"
+          @createEvent="createEvent" 
+          @getOrCreateSharedCalendarId="getOrCreateSharedCalendarId" 
         />
       </div>
     </div>

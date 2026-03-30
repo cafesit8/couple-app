@@ -63,7 +63,14 @@ body {
   scroll-behavior: smooth;
   scrollbar-color: #fbf8f3 transparent;
 }
-
+/* Ocultar scrollbar pero permitir scroll */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
 @theme inline {
   --font-poppins: 'Poppins', system-ui, sans-serif;
   --font-lora: 'Lora', serif;

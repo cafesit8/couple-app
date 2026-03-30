@@ -1,117 +1,131 @@
-import { ref, computed } from 'vue'
-import type { CalendarDay, CalendarEvent } from '../types'
+import { onMounted, ref } from "vue";
+import type { CalendarDay, CalendarEvent } from "../types"
+import { useStorage } from "@vueuse/core";
+import googleCalendarApi from "@/api/google";
+import { push } from 'notivue'
+import { getRandomColorId } from "../utils/calendar";
 
-export function useCalendar(events: CalendarEvent[]) {
-  const currentDate = ref(new Date())
-  const selectedDate = ref<Date | null>(null)
+export function useCalendar() {
+  const isLoading = ref(false)
+  const dateSelected = ref<CalendarDay | null>(null)
+  const events = ref<CalendarEvent[]>([])
+  const eventSelected = ref<CalendarEvent | null>(null)
+  const sharedCalendarId = useStorage<string | null>('shared_calendar_id', null);
 
-  const year = computed(() => currentDate.value.getFullYear())
-  const month = computed(() => currentDate.value.getMonth())
+  function getSelectedDate(date: CalendarDay, event: CalendarEvent | null) {
+    dateSelected.value = date;
+    eventSelected.value = event;
+  }
 
-  const monthLabel = computed(() => {
-    const label = currentDate.value.toLocaleString('es', { month: 'long', year: 'numeric' })
-    return label.charAt(0).toUpperCase() + label.slice(1)
-  })
-
-  const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-
-  const calendarDays = computed<CalendarDay[]>(() => {
-    const days: CalendarDay[] = []
-    const daysInMonth = new Date(year.value, month.value + 1, 0).getDate()
-    const firstDayWeekday = new Date(year.value, month.value, 1).getDay()
-    const startPadding = firstDayWeekday === 0 ? 6 : firstDayWeekday - 1
-
-    const prevMonthDays = new Date(year.value, month.value, 0).getDate()
-    for (let i = startPadding - 1; i >= 0; i--) {
-      days.push({
-        day: prevMonthDays - i,
-        date: new Date(year.value, month.value - 1, prevMonthDays - i),
-        currentMonth: false,
-      })
+  async function createEvent(form: { title: string, description: string, time: string }) {
+    if (!dateSelected.value) {
+      push.warning('No hay fecha seleccionada');
+      return;
     }
 
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push({
-        day: i,
-        date: new Date(year.value, month.value, i),
-        currentMonth: true,
-      })
+    if (!sharedCalendarId.value || sharedCalendarId.value === 'not found') return;
+    if (isLoading.value) return;
+
+    try {
+      isLoading.value = true;
+      const [hours, minutes] = form.time.split(':').map(Number);
+      
+      const startDate = new Date(dateSelected.value.date);
+      startDate.setHours(hours!, minutes, 0, 0);
+
+      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+
+      const eventPayload = {
+        summary: form.title || "Nuevo Recuerdo ❤️",
+        description: form.description,
+        start: {
+          dateTime: startDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        end: {
+          dateTime: endDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        colorId: getRandomColorId()
+      };
+
+      await googleCalendarApi.post(
+        `/calendars/${sharedCalendarId.value}/events`, 
+        eventPayload
+      );
+      
+      push.success('Recuerdo guardado exitosamente');
+      dateSelected.value = null;
+      getMemories();
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        push.error('No tienes permisos para escribir en este calendario');
+      } else {
+        push.error("Error creando el evento:");
+      }
+      throw error;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function getOrCreateSharedCalendarId() {
+    try {
+      const response = await googleCalendarApi.get('/users/me/calendarList', {
+        params: {
+          minAccessRole: 'writer',
+          showHidden: true,
+        }
+      });
+      const items = response.data.items;
+      const sharedCalendar = items.find((cal: any) => cal.summary === 'Memories App ❤️');
+
+      if (sharedCalendar) {
+        push.success('Calendario cargado correctamente');
+        sharedCalendarId.value = sharedCalendar.id;
+        getMemories();
+      }
+    } catch (error) {
+      push.error('Hubo un error al conectar con Google');
+      sharedCalendarId.value = 'not found';
+    }
+  }
+
+  async function getMemories() {
+    if (!sharedCalendarId.value || sharedCalendarId.value === 'not found') {
+      push.error("Error al cargar los recuerdos");
+      return [];
     }
 
-    const totalCells = days.length <= 35 ? 35 : 42
-    const remaining = totalCells - days.length
-    for (let i = 1; i <= remaining; i++) {
-      days.push({
-        day: i,
-        date: new Date(year.value, month.value + 1, i),
-        currentMonth: false,
-      })
+    try {
+      const response = await googleCalendarApi.get(
+        `/calendars/${sharedCalendarId.value}/events`,
+        {
+          params: {
+            orderBy: 'startTime',
+            singleEvents: true,
+          }
+        }
+      );
+
+      events.value = response.data.items;
+    } catch (error) {
+      console.error("Error al cargar los recuerdos:", error);
+      throw error;
     }
-
-    return days
-  })
-
-  function prevMonth() {
-    currentDate.value = new Date(year.value, month.value - 1, 1)
   }
 
-  function nextMonth() {
-    currentDate.value = new Date(year.value, month.value + 1, 1)
-  }
-
-  function selectDate(date: Date) {
-    selectedDate.value = date
-  }
-
-  function isToday(date: Date): boolean {
-    const today = new Date()
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    )
-  }
-
-  function isSameDay(a: Date, b: Date): boolean {
-    return (
-      a.getDate() === b.getDate() &&
-      a.getMonth() === b.getMonth() &&
-      a.getFullYear() === b.getFullYear()
-    )
-  }
-
-  function isSelected(date: Date): boolean {
-    return selectedDate.value ? isSameDay(date, selectedDate.value) : false
-  }
-
-  function getEventsForDate(date: Date): CalendarEvent[] {
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    return events.filter((e) => e.fecha === dateStr)
-  }
-
-  function formatSelectedDate(date: Date): string {
-    return date.toLocaleDateString('es', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  }
+  onMounted(() => {
+    if (sharedCalendarId) getMemories();
+  });
 
   return {
-    currentDate,
-    selectedDate,
-    year,
-    month,
-    monthLabel,
-    weekDays,
-    calendarDays,
-    prevMonth,
-    nextMonth,
-    selectDate,
-    isToday,
-    isSelected,
-    getEventsForDate,
-    formatSelectedDate,
+    getSelectedDate,
+    createEvent,
+    getOrCreateSharedCalendarId,
+    dateSelected,
+    events,
+    eventSelected,
+    isLoading
   }
 }

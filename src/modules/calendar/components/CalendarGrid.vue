@@ -2,33 +2,58 @@
 import { computed } from 'vue';
 import { Calendar } from 'v-calendar';
 import 'v-calendar/dist/style.css';
-import type { CalendarEvent } from '../types';
+import type { CalendarDay, CalendarEvent } from '../types';
 
 const props = defineProps<{
-  events: CalendarEvent[] // Pasamos todos los eventos directamente
+  events: CalendarEvent[]
+  dateSelected: CalendarDay | null
 }>();
 
 const emit = defineEmits<{
-  selectDate: [date: Date]
+  selectDate: [date: CalendarDay, event: CalendarEvent | null],
+  refreshEvents: []
 }>();
 
-// Transformamos los eventos en atributos que V-Calendar entiende
 const calendarAttributes = computed(() => {
   return props.events.map(event => ({
     key: event.id,
-    customData: event,  // Guardamos todo el objeto aquí para el slot
+    customData: event,
   }));
 });
 
-// Configuración estética del calendario
 const calendarConfig = {
-  masks: { weekdays: 'WWW' }, // 'Lun', 'Mar', etc.
+  masks: { weekdays: 'WWW' },
   transparent: true,
   borderless: true,
 };
 
-function handleDayClick(day: any) {
-  console.log(day);
+const getEventsForDay = (dayId: string) => {
+  return props.events.filter(event => {
+    const eventDate = event.start?.dateTime;
+    if (!eventDate) return false;
+    
+    return eventDate.startsWith(dayId);
+  });
+};
+
+const getEventColorClass = (colorId?: string) => {
+  const colors: Record<string, string> = {
+    "1": "bg-blue-50 text-blue-600",
+    "3": "bg-purple-50 text-purple-600",
+    "4": "bg-pink-50 text-pink-600",
+    "6": "bg-orange-50 text-orange-600",
+    "7": "bg-teal-50 text-teal-600",
+    "9": "bg-indigo-50 text-indigo-600",
+    "11": "bg-red-50 text-red-600",
+    default: "bg-gray-100 text-gray-600 border border-gray-200"
+  };
+
+  return colors[colorId || 'default'] || colors.default;
+};
+
+function getDay(day: CalendarDay) {
+  const event = props.events.find(event => event.start?.dateTime.split('T')[0] === day.id);
+  emit('selectDate', day, event || null);
 }
 </script>
 
@@ -40,31 +65,28 @@ function handleDayClick(day: any) {
       v-bind="calendarConfig"
       class="custom-calendar"
     >
-      <template #day-content="{ day, attributes }">
-        <div class="day-wrapper" @click="handleDayClick(day)">
+      <template #day-content="{ day }">
+        <div 
+          class="day-wrapper flex flex-col h-full min-h-10 p-1 border border-transparent transition-colors" 
+          :class="{'is-selected': day.ariaLabel === dateSelected?.ariaLabel}" 
+          @click="getDay(day)"
+        >
           <span 
-            class="day-number" 
+            class="day-number text-sm font-medium text-center" 
             :class="{ 'is-today': day.isToday }"
           >
             {{ day.day }}
           </span>
 
-          <div class="day-content">
-            <template v-if="attributes.length > 0">
-              <div 
-                v-for="{ customData: event } in attributes" 
-                :key="event.id"
-                class="event-item"
-              >
-                <div v-if="event.imagen" class="photo-container">
-                  <img :src="event.imagen" :alt="event.titulo" class="photo-img" />
-                </div>
-
-                <svg v-else-if="event.favorito" class="icon-red" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
-                </svg>
-              </div>
-            </template>
+          <div class="day-content mt-1 flex-1 space-y-1 overflow-y-auto scrollbar-hide">
+            <div
+              v-for="event in getEventsForDay(day.id)"
+              :key="event.id"
+              class="text-[8px] leading-tight px-1.5 py-0.5 rounded truncate font-medium shadow-sm transition-transform hover:scale-[1.02]"
+              :class="getEventColorClass(event.colorId)"
+            >
+              {{ event.summary }}
+            </div>
           </div>
         </div>
       </template>
@@ -84,6 +106,10 @@ function handleDayClick(day: any) {
 }
 
 /* --- Ajustes estructurales de V-Calendar --- */
+:deep(.vc-container) {
+  width: auto !important;
+}
+
 :deep(.vc-pane) {
   font-family: inherit;
 }
@@ -119,7 +145,6 @@ function handleDayClick(day: any) {
   flex-direction: column;
   align-items: center;
   height: 100%;
-  width: 100%;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
@@ -127,6 +152,10 @@ function handleDayClick(day: any) {
 /* Efecto hover sutil al pasar el mouse por un día */
 .day-wrapper:hover {
   background-color: #f9fafa;
+}
+
+.day-wrapper.is-selected {
+  background-color: #f0f3f3;
 }
 
 /* Números de los días */
