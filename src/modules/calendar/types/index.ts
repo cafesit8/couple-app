@@ -1,7 +1,7 @@
 export interface CalendarEvent {
   kind:         string;
   etag:         string;
-  id:           string;
+  id:           string | number;
   status:       string;
   htmlLink:     string;
   created:      string; // ISO Date String
