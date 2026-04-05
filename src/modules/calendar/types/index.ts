@@ -77,3 +77,9 @@ export interface CalendarDay {
   classes: Array<string | Object>;
   locale: Locale;
 }
+
+export interface EventForm {
+  title: string
+  description: string
+  time: string
+}

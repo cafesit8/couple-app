@@ -23,7 +23,6 @@ googleCalendarApi.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.error("El token ha expirado o es inválido.");
       localStorage.removeItem('google_access_token');
     }
     return Promise.reject(error);

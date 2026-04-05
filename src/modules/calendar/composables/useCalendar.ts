@@ -1,23 +1,33 @@
 import { onMounted, ref } from "vue";
-import type { CalendarDay, CalendarEvent } from "../types"
+import type { CalendarDay, CalendarEvent, EventForm } from "../types"
 import { useStorage } from "@vueuse/core";
 import googleCalendarApi from "@/api/google";
 import { push } from 'notivue'
 import { getRandomColorId } from "../utils/calendar";
+import { useErrors } from "@/composables/useErrors";
+import type { AxiosError } from "axios";
+import { useCalendarStore } from "@/store";
 
 export function useCalendar() {
   const isLoading = ref(false)
   const dateSelected = ref<CalendarDay | null>(null)
   const events = ref<CalendarEvent[]>([])
   const eventSelected = ref<CalendarEvent | null>(null)
+  const googleToken = useStorage<string | null>('google_access_token', null);
   const sharedCalendarId = useStorage<string | null>('shared_calendar_id', null);
+  const {notification} = useErrors();
+  const calendarStore = useCalendarStore()
 
   function getSelectedDate(date: CalendarDay, event: CalendarEvent | null) {
     dateSelected.value = date;
     eventSelected.value = event;
   }
 
-  async function createEvent(form: { title: string, description: string, time: string }) {
+  function deleteEventSelected() {
+    eventSelected.value = null;
+  }
+
+  async function createEvent(form: EventForm) {
     if (!dateSelected.value) {
       push.warning('No hay fecha seleccionada');
       return;
@@ -57,13 +67,77 @@ export function useCalendar() {
       push.success('Recuerdo guardado exitosamente');
       dateSelected.value = null;
       getMemories();
-    } catch (error: any) {
-      if (error.response?.status === 403) {
-        push.error('No tienes permisos para escribir en este calendario');
-      } else {
-        push.error("Error creando el evento:");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        notification(error as AxiosError);
       }
-      throw error;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function updateEvent(form: EventForm) {
+    if (!dateSelected.value || !sharedCalendarId.value || !eventSelected.value) return;
+
+    try {
+      isLoading.value = true;
+      const [hours, minutes] = form.time.split(':').map(Number);
+      const startDate = new Date(dateSelected.value.date);
+      startDate.setHours(hours!, minutes, 0, 0);
+      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+
+      const eventPayload = {
+        summary: form.title,
+        description: form.description,
+        start: {
+          dateTime: startDate.toISOString(),
+        },
+        end: {
+          dateTime: endDate.toISOString(),
+        },
+      };
+
+      const response = await googleCalendarApi.patch(
+        `/calendars/${sharedCalendarId.value}/events/${eventSelected.value?.id}`,
+        eventPayload
+      );
+
+      if (response.status !== 200) {
+        push.error('Error al actualizar el evento');
+        return;
+      }
+      push.success('Evento actualizado');
+      getMemories();
+    } catch (error) {
+      if (error instanceof Error) {
+        notification(error as AxiosError);
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function deleteEvent() {
+    if (!sharedCalendarId.value || sharedCalendarId.value === 'not found' || !eventSelected.value) return;
+
+    try {
+      isLoading.value = true;
+
+      const response = await googleCalendarApi.delete(
+        `/calendars/${sharedCalendarId.value}/events/${eventSelected.value?.id}`
+      );
+
+      if (response.status !== 204) {
+        push.error('Error al eliminar el evento');
+        return;
+      }
+
+      push.success('Evento eliminado');
+      eventSelected.value = null;
+      getMemories();
+    } catch (error) {
+      console.error("Error al eliminar el evento:", error);
+      alert("No se pudo eliminar el recuerdo. Inténtalo de nuevo.");
     } finally {
       isLoading.value = false;
     }
@@ -92,7 +166,7 @@ export function useCalendar() {
   }
 
   async function getMemories() {
-    if (!sharedCalendarId.value || sharedCalendarId.value === 'not found') {
+    if (!googleToken.value || !sharedCalendarId.value || sharedCalendarId.value === 'not found') {
       push.error("Error al cargar los recuerdos");
       return [];
     }
@@ -109,20 +183,26 @@ export function useCalendar() {
       );
 
       events.value = response.data.items;
+      calendarStore.addEvent(response.data.items)
     } catch (error) {
-      console.error("Error al cargar los recuerdos:", error);
+      push.error("Error al cargar los recuerdos");
       throw error;
     }
   }
 
   onMounted(() => {
-    if (sharedCalendarId) getMemories();
+    if (googleToken.value && sharedCalendarId.value) {
+      getMemories();
+    }
   });
 
   return {
     getSelectedDate,
     createEvent,
     getOrCreateSharedCalendarId,
+    updateEvent,
+    deleteEventSelected,
+    deleteEvent,
     dateSelected,
     events,
     eventSelected,

@@ -4,7 +4,7 @@ import Navigation from "@/components/Navigation.vue"
 
 <template>
   <main class="h-dvh w-full flex flex-col relative bg-[#fbf8f3]">
-    <div class="flex-1 w-full relative overflow-auto max-h-237">
+    <div class="flex-1 w-full relative overflow-auto h-full overflow-y-auto">
       <slot />
     </div>
     <Navigation />
