@@ -62,7 +62,20 @@ function handleDayClick(day: CalendarDay, $event: MouseEvent) {
   }
 
   const rect = ($event.currentTarget as HTMLElement).getBoundingClientRect();
-  modalAnchor.value = { top: rect.bottom + window.scrollY + 6, left: rect.left + window.scrollX };
+  const MODAL_WIDTH = 220;
+  const VIEWPORT_WIDTH = window.innerWidth;
+  const MARGIN = 8;
+
+  const leftRaw = rect.left + window.scrollX;
+  const fitsRight = rect.left + MODAL_WIDTH + MARGIN < VIEWPORT_WIDTH;
+
+  modalAnchor.value = {
+    top: rect.bottom + window.scrollY + 6,
+    left: fitsRight
+      ? leftRaw
+      : Math.max(MARGIN, VIEWPORT_WIDTH - MODAL_WIDTH - MARGIN + window.scrollX),
+  };
+
   modalDay.value = day;
   modalEvents.value = dayEvents;
 }
@@ -144,6 +157,21 @@ function closeModal() {
 </template>
 
 <style scoped>
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  /* Sin background, invisible — solo captura el click */
+  background: transparent;
+}
+
+.event-picker {
+  position: fixed; /* fixed en vez de absolute — se mueve con el scroll */
+  z-index: 50;
+  min-width: 200px;
+  max-width: min(260px, calc(100vw - 16px)); /* nunca más ancho que el viewport */
+  /* ... resto igual */
+}
 .memories-calendar-container {
   background-color: #ffffff;
   border-radius: 1.25rem;
