@@ -158,6 +158,10 @@ export function useCalendar() {
         push.success('Calendario cargado correctamente');
         sharedCalendarId.value = sharedCalendar.id;
         getMemories();
+      } else {
+        // ESTO ES LO QUE LE PASA A ELLA:
+        push.error('No se encontró el calendario compartido. ¿Aceptaste la invitación?');
+        sharedCalendarId.value = 'not found';
       }
     } catch (error) {
       push.error('Hubo un error al conectar con Google');
