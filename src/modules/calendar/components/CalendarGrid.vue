@@ -252,16 +252,6 @@ function closeModal() {
   text-overflow: ellipsis;
   width: 100%;
   box-sizing: border-box;
-
-  /* En móvil solo mostrar punto, no texto */
-  @media (max-width: 400px) {
-    font-size: 0;
-    height: 6px;
-    border-radius: 50%;
-    width: 6px;
-    padding: 0;
-    align-self: center;
-  }
 }
 
 /* --- Modal backdrop --- */
