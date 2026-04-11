@@ -6,11 +6,14 @@ const calendarStore = useCalendarStore()
 const events = computed(() => calendarStore.events)
 
 function formatDate(dateTime: string) {
-  return new Date(dateTime).toLocaleDateString('es-PE', {
+  if (!dateTime) return "";
+  const dateSafe = dateTime.includes('T') ? dateTime : dateTime.replace(/-/g, '/');
+
+  return new Date(dateSafe).toLocaleDateString('es-PE', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  })
+  });
 }
 </script>
 
@@ -26,7 +29,7 @@ function formatDate(dateTime: string) {
         <div class="shrink-0 w-2 h-2 rounded-full bg-[#dc9d8d] mt-1.5" />
         <div class="flex flex-col min-w-0">
           <span class="text-xs font-semibold text-[#9b8ea8] uppercase tracking-wide">
-            {{ formatDate(event.start?.dateTime ?? '') }}
+            {{ formatDate(event.start?.dateTime || event.start?.date) }}
           </span>
           <span class="text-sm text-gray-700 truncate">{{ event.summary }}</span>
         </div>
