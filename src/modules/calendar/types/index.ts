@@ -32,6 +32,7 @@ export interface Organizer {
 export interface EventDateTime {
   dateTime: string; // ISO Date String con Offset (e.g., -05:00)
   timeZone: string;
+  date:     string; // ISO Date String
 }
 
 export interface Reminders {

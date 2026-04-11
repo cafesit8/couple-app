@@ -31,8 +31,12 @@ const calendarConfig = {
   borderless: true,
 };
 
-const getEventsForDay = (dayId: string) =>
-  props.events.filter(event => event.start?.dateTime?.startsWith(dayId));
+const getEventsForDay = (dayId: string) => {
+  return props.events.filter(event => {
+    const eventDate = event.start?.dateTime || event.start?.date;
+    return eventDate?.startsWith(dayId);
+  });
+};
 
 const getEventColorClass = (colorId?: string) => {
   const colors: Record<string, string> = {
