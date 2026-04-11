@@ -6,7 +6,7 @@ const googleCalendarApi = axios.create({
 
 googleCalendarApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('google_access_token'); 
+    const token = localStorage.getItem('google_access_token');
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -21,9 +21,12 @@ googleCalendarApi.interceptors.request.use(
 
 googleCalendarApi.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('google_access_token');
+      // Token expirado, ejecutar logout
+      const { useGoogleLogout } = await import('@/composables/useGoogleLogout');
+      const { logout } = useGoogleLogout();
+      await logout();
     }
     return Promise.reject(error);
   }

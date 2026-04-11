@@ -10,6 +10,7 @@ const {
   updateEvent,
   deleteEventSelected,
   deleteEvent,
+  logout,
   dateSelected,
   events,
   eventSelected,
@@ -35,6 +36,7 @@ const {
           @createEvent="createEvent" 
           @updateEvent="updateEvent"
           @deleteEvent="deleteEvent"
+          @logout="logout"
           @deleteEventSelected="deleteEventSelected"
           @getOrCreateSharedCalendarId="getOrCreateSharedCalendarId"
         />

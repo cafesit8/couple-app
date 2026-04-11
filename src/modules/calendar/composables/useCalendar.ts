@@ -194,11 +194,54 @@ export function useCalendar() {
     }
   }
 
-  onMounted(() => {
-    if (googleToken.value && sharedCalendarId.value) {
-      getMemories();
+  async function isTokenValid(token: string): Promise<boolean> {
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`
+      )
+      return response.ok
+    } catch {
+      return false
     }
-  });
+  }
+
+  async function revokeToken(token: string): Promise<void> {
+    await fetch('https://oauth2.googleapis.com/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `token=${token}`,
+    }).catch(() => {
+      push.warning('No se pudo revocar el token de Google')
+    })
+  }
+
+  function clearSession(): void {
+    googleToken.value = null
+    sharedCalendarId.value = null
+  }
+
+  async function logout(): Promise<void> {
+    if (googleToken.value) {
+      await revokeToken(googleToken.value)
+    }
+    clearSession()
+    push.warning('Sesión de Google expirada. Por favor, inicia sesión nuevamente')
+  }
+
+  onMounted(async () => {
+    const hasSession = googleToken.value && sharedCalendarId.value
+    if (!hasSession) {
+      clearSession()
+      return
+    }
+
+    const valid = await isTokenValid(googleToken.value!)
+    if (valid) {
+      await getMemories()
+    } else {
+      await logout()
+    }
+  })
 
   return {
     getSelectedDate,
@@ -207,6 +250,7 @@ export function useCalendar() {
     updateEvent,
     deleteEventSelected,
     deleteEvent,
+    logout,
     dateSelected,
     events,
     eventSelected,

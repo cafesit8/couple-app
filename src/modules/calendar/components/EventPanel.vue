@@ -17,6 +17,7 @@ const emit = defineEmits<{
   updateEvent: [form: EventForm]
   deleteEventSelected: []
   deleteEvent: []
+  logout: []
 }>()
 
 const googleToken = useStorage<string | null>('google_access_token', null)
@@ -151,6 +152,11 @@ watch(
           <p class="text-sm text-green-600">Google Calendar</p>
         </div>
       </div>
+
+      <button v-if="isConnected" class="google-connect-btn mt-3" @click="$emit('logout')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-logout-2"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10 8v-2a2 2 0 0 1 2 -2h7a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-7a2 2 0 0 1 -2 -2v-2" /><path d="M15 12h-12l3 -3" /><path d="M6 15l-3 -3" /></svg>
+        Cerrar sesión
+      </button>
 
       <button v-else class="google-connect-btn w-full" @click="login()">
         <svg class="w-5 h-5" viewBox="0 0 24 24">
