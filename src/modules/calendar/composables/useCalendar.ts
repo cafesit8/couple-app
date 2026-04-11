@@ -225,6 +225,7 @@ export function useCalendar() {
       await revokeToken(googleToken.value)
     }
     clearSession()
+    events.value = []
     push.warning('Sesión de Google expirada. Por favor, inicia sesión nuevamente')
   }
 
