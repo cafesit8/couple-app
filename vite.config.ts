@@ -17,7 +17,7 @@ export default defineConfig({
       manifest: {
         name: 'Memories App',
         short_name: 'Memories',
-        theme_color: '#ffffff',
+        theme_color: '#fbf8f3',
         icons: [
           {
             src: '/pwa-192x192.png',
