@@ -1,8 +1,10 @@
 <script lang="ts" setup>
-import Events from "../components/Events.vue";
-import Header from "../components/HeaderDashboard.vue"
-import Memories from "../components/Memories.vue"
-import TimeLine from "../components/TimeLine.vue"
+import { defineAsyncComponent } from "vue";
+
+const Events = defineAsyncComponent(() => import("../components/Events.vue"));
+const Header = defineAsyncComponent(() => import("../components/HeaderDashboard.vue"));
+const Memories = defineAsyncComponent(() => import("../components/Memories.vue"));
+const TimeLine = defineAsyncComponent(() => import("../components/TimeLine.vue"));
 </script>
 
 <template>

@@ -1,9 +1,14 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
-import { Calendar } from 'v-calendar';
+import { computed, ref, defineAsyncComponent } from 'vue';
 import type { CalendarDay, CalendarEvent } from '../types';
 import { useCalendarStore } from '../../../store/calendar';
+import Loader from './Loader.vue';
 import 'v-calendar/dist/style.css';
+
+const Calendar = defineAsyncComponent({
+  loader: () => import('v-calendar').then(m => m.Calendar),
+  loadingComponent: Loader,
+});
 
 const props = defineProps<{
   dateSelected: CalendarDay | null
