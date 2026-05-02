@@ -7,11 +7,11 @@ import { getRandomColorId } from "../utils/calendar";
 import { useErrors } from "@/composables/useErrors";
 import type { AxiosError } from "axios";
 import { useCalendarStore } from "@/store";
+import { GOOGLE_TOKENINFO_ENDPOINT } from '@/constants/google';
 
 export function useCalendar() {
   const isLoading = ref(false)
   const dateSelected = ref<CalendarDay | null>(null)
-  const events = ref<CalendarEvent[]>([])
   const eventSelected = ref<CalendarEvent | null>(null)
   const googleToken = useStorage<string | null>('google_access_token', null);
   const sharedCalendarId = useStorage<string | null>('shared_calendar_id', null);
@@ -186,7 +186,6 @@ export function useCalendar() {
         }
       );
 
-      events.value = response.data.items;
       calendarStore.addEvent(response.data.items)
     } catch (error) {
       push.error("Error al cargar los recuerdos");
@@ -196,9 +195,8 @@ export function useCalendar() {
 
   async function isTokenValid(token: string): Promise<boolean> {
     try {
-      const response = await fetch(
-        `https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`
-      )
+      const url = `${GOOGLE_TOKENINFO_ENDPOINT}?access_token=${token}`
+      const response = await fetch(url)
       return response.ok
     } catch {
       return false
@@ -225,7 +223,7 @@ export function useCalendar() {
       await revokeToken(googleToken.value)
     }
     clearSession()
-    events.value = []
+    calendarStore.resetEvents()
     push.warning('Sesión de Google expirada. Por favor, inicia sesión nuevamente')
   }
 
@@ -240,7 +238,7 @@ export function useCalendar() {
     if (valid) {
       await getMemories()
     } else {
-      await logout()
+      await logout();
     }
   })
 
@@ -253,7 +251,6 @@ export function useCalendar() {
     deleteEvent,
     logout,
     dateSelected,
-    events,
     eventSelected,
     isLoading
   }

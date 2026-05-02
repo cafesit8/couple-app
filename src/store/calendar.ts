@@ -9,5 +9,9 @@ export const useCalendarStore = defineStore('calendar', () => {
     events.value = eventList
   }
 
-  return { events, addEvent }
+  function resetEvents() {
+    events.value = []
+  }
+
+  return { events, addEvent, resetEvents }
 })

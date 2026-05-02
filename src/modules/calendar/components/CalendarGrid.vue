@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
 import { Calendar } from 'v-calendar';
-import 'v-calendar/dist/style.css';
 import type { CalendarDay, CalendarEvent } from '../types';
+import { useCalendarStore } from '../../../store/calendar';
+import 'v-calendar/dist/style.css';
 
 const props = defineProps<{
-  events: CalendarEvent[]
   dateSelected: CalendarDay | null
 }>();
 
@@ -14,12 +14,13 @@ const emit = defineEmits<{
   refreshEvents: []
 }>();
 
+const calendarStore = useCalendarStore()
 const modalDay = ref<CalendarDay | null>(null);
 const modalEvents = ref<CalendarEvent[]>([]);
 const modalAnchor = ref<{ top: number; left: number } | null>(null);
 
 const calendarAttributes = computed(() =>
-  props.events.map(event => ({
+  calendarStore.events.map(event => ({
     key: event.id,
     customData: event,
   }))
@@ -32,9 +33,9 @@ const calendarConfig = {
 };
 
 const getEventsForDay = (dayId: string) => {
-  return props.events.filter(event => {
+  return calendarStore.events.filter(event => {
     const eventDate = event.start?.dateTime || event.start?.date;
-    return eventDate?.startsWith(dayId);
+    return eventDate?.startsWith(dayId); 
   });
 };
 

@@ -1,7 +1,8 @@
+import { GOOGLE_CALENDAR_API_BASE } from '@/constants/google';
 import axios from 'axios';
 
 const googleCalendarApi = axios.create({
-  baseURL: 'https://www.googleapis.com/calendar/v3',
+  baseURL: GOOGLE_CALENDAR_API_BASE,
 });
 
 googleCalendarApi.interceptors.request.use(
@@ -23,9 +24,8 @@ googleCalendarApi.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Token expirado, ejecutar logout
-      const { useGoogleLogout } = await import('@/composables/useGoogleLogout');
-      const { logout } = useGoogleLogout();
+      const { useCalendar } = await import('@/modules/calendar/composables/useCalendar');
+      const { logout } = useCalendar();
       await logout();
     }
     return Promise.reject(error);

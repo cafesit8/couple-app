@@ -12,7 +12,6 @@ const {
   deleteEvent,
   logout,
   dateSelected,
-  events,
   eventSelected,
   isLoading
 } = useCalendar()
@@ -24,7 +23,6 @@ const {
       <div class="calendar-card">
         <CalendarGrid
           :date-selected="dateSelected"
-          :events="events"
           @selectDate="getSelectedDate"
         />
       </div>
