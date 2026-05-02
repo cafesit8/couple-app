@@ -14,10 +14,22 @@ const emit = defineEmits<{
   refreshEvents: []
 }>();
 
-const calendarStore = useCalendarStore()
+const calendarStore = useCalendarStore();
 const modalDay = ref<CalendarDay | null>(null);
 const modalEvents = ref<CalendarEvent[]>([]);
 const modalAnchor = ref<{ top: number; left: number } | null>(null);
+
+const EVENT_COLORS: Record<string, string> = {
+  '1': 'bg-blue-50 text-blue-600',
+  '3': 'bg-purple-50 text-purple-600',
+  '4': 'bg-pink-50 text-pink-600',
+  '6': 'bg-orange-50 text-orange-600',
+  '7': 'bg-teal-50 text-teal-600',
+  '9': 'bg-indigo-50 text-indigo-600',
+  '11': 'bg-red-50 text-red-600',
+};
+
+const DEFAULT_EVENT_COLOR = 'bg-gray-100 text-gray-600 border border-gray-200';
 
 const calendarAttributes = computed(() =>
   calendarStore.events.map(event => ({
@@ -32,26 +44,33 @@ const calendarConfig = {
   borderless: true,
 };
 
-const getEventsForDay = (dayId: string) => {
-  return calendarStore.events.filter(event => {
+const eventsByDay = computed(() => {
+  const map: Record<string, CalendarEvent[]> = {};
+  for (const event of calendarStore.events) {
     const eventDate = event.start?.dateTime || event.start?.date;
-    return eventDate?.startsWith(dayId); 
+    if (!eventDate) continue;
+    const dayId = eventDate.split('T')[0];
+    (map[dayId!] ??= []).push(event);
+  }
+  return map;
+});
+
+const getEventsForDay = (dayId: string): CalendarEvent[] =>
+  eventsByDay.value[dayId] ?? [];
+
+const getEventColorClass = (colorId?: string): string =>
+  EVENT_COLORS[colorId ?? ''] ?? DEFAULT_EVENT_COLOR;
+
+const formatEventTime = (event: CalendarEvent): string => {
+  if (!event.start?.dateTime) return '';
+  return new Date(event.start.dateTime).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
-const getEventColorClass = (colorId?: string) => {
-  const colors: Record<string, string> = {
-    '1': 'bg-blue-50 text-blue-600',
-    '3': 'bg-purple-50 text-purple-600',
-    '4': 'bg-pink-50 text-pink-600',
-    '6': 'bg-orange-50 text-orange-600',
-    '7': 'bg-teal-50 text-teal-600',
-    '9': 'bg-indigo-50 text-indigo-600',
-    '11': 'bg-red-50 text-red-600',
-    default: 'bg-gray-100 text-gray-600 border border-gray-200',
-  };
-  return colors[colorId ?? 'default'] ?? colors.default;
-};
+const isSelectedDay = (day: CalendarDay): boolean =>
+  day.ariaLabel === props.dateSelected?.ariaLabel;
 
 function handleDayClick(day: CalendarDay, $event: MouseEvent) {
   const dayEvents = getEventsForDay(day.id);
@@ -99,10 +118,8 @@ function closeModal() {
 </script>
 
 <template>
-  <!-- Backdrop invisible para cerrar el modal al click fuera -->
   <div v-if="modalDay" class="modal-backdrop" @click="closeModal" />
 
-  <!-- Modal flotante -->
   <Teleport to="body">
     <div
       v-if="modalDay && modalAnchor"
@@ -121,7 +138,7 @@ function closeModal() {
           <span class="event-picker__dot" />
           <span class="event-picker__label">{{ event.summary }}</span>
           <span class="event-picker__time">
-            {{ event.start?.dateTime ? new Date(event.start.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '' }}
+            {{ formatEventTime(event) }}
           </span>
         </li>
       </ul>
@@ -138,7 +155,7 @@ function closeModal() {
       <template #day-content="{ day }">
         <div
           class="day-wrapper"
-          :class="{ 'is-selected': day.ariaLabel === dateSelected?.ariaLabel }"
+          :class="{ 'is-selected': isSelectedDay(day) }"
           @click="handleDayClick(day, $event)"
         >
           <span class="day-number" :class="{ 'is-today': day.isToday }">
@@ -166,140 +183,14 @@ function closeModal() {
   position: fixed;
   inset: 0;
   z-index: 49;
-  /* Sin background, invisible — solo captura el click */
   background: transparent;
 }
 
 .event-picker {
-  position: fixed; /* fixed en vez de absolute — se mueve con el scroll */
-  z-index: 50;
-  min-width: 200px;
-  max-width: min(260px, calc(100vw - 16px)); /* nunca más ancho que el viewport */
-  /* ... resto igual */
-}
-.memories-calendar-container {
-  background-color: #ffffff;
-  border-radius: 1.25rem;
-  padding: clamp(8px, 3vw, 20px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  box-sizing: border-box;
-}
-
-/* --- V-Calendar overrides --- */
-:deep(.vc-container) {
-  width: 100% !important;
-}
-
-:deep(.vc-header) {
-  padding: clamp(4px, 2vw, 12px) 0;
-}
-
-:deep(.vc-title) {
-  font-size: clamp(13px, 3vw, 18px);
-}
-
-:deep(.vc-arrow) {
-  width: clamp(24px, 5vw, 32px);
-  height: clamp(24px, 5vw, 32px);
-}
-
-:deep(.vc-weekday) {
-  color: #a0a0a0;
-  font-size: clamp(9px, 1.8vw, 13px);
-  font-weight: 600;
-  text-transform: capitalize;
-  padding-bottom: clamp(4px, 1.5vw, 12px);
-}
-
-:deep(.vc-weeks) {
-  border-top: 1px solid #eaeaea;
-  border-left: 1px solid #eaeaea;
-  margin-top: 8px;
-}
-
-:deep(.vc-day) {
-  border-right: 1px solid #eaeaea;
-  border-bottom: 1px solid #eaeaea;
-  background-color: #ffffff;
-  /* altura dinámica basada en el viewport */
-  height: clamp(36px, 10vw, 90px);
-  overflow: hidden;
-}
-
-/* --- Day cell --- */
-.day-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  padding: clamp(2px, 0.8vw, 5px);
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  box-sizing: border-box;
-}
-
-.day-wrapper:hover   { background-color: #f9fafa; }
-.day-wrapper.is-selected { background-color: #f0f3f3; }
-
-/* --- Day number --- */
-.day-number {
-  font-size: clamp(9px, 2vw, 13px);
-  color: #555555;
-  line-height: 1;
-  margin-bottom: clamp(2px, 0.5vw, 5px);
-  flex-shrink: 0;
-}
-
-.day-number.is-today {
-  color: #e11d48;
-  font-weight: 700;
-  background-color: #ffe4e6;
-  padding: 2px clamp(3px, 1vw, 6px);
-  border-radius: 12px;
-}
-
-/* --- Events area --- */
-.day-content {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  width: 100%;
-  flex: 1;
-  overflow: hidden;
-}
-
-/* --- Event pill --- */
-.event-pill {
-  font-size: clamp(7px, 1.4vw, 9px);
-  line-height: 1.2;
-  padding: 1px clamp(2px, 0.6vw, 5px);
-  border-radius: 4px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* --- Modal backdrop --- */
-.modal-backdrop {
   position: fixed;
-  inset: 0;
-  z-index: 40;
-}
-
-/* --- Event picker modal --- */
-.event-picker {
-  position: absolute;
   z-index: 50;
   min-width: 180px;
-  max-width: 260px;
+  max-width: min(260px, calc(100vw - 16px));
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
@@ -370,5 +261,109 @@ function closeModal() {
   flex-shrink: 0;
   font-size: 10px;
   opacity: 0.6;
+}
+
+.memories-calendar-container {
+  background-color: #ffffff;
+  border-radius: 1.25rem;
+  padding: clamp(8px, 3vw, 20px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+:deep(.vc-container) {
+  width: 100% !important;
+}
+
+:deep(.vc-header) {
+  padding: clamp(4px, 2vw, 12px) 0;
+}
+
+:deep(.vc-title) {
+  font-size: clamp(13px, 3vw, 18px);
+}
+
+:deep(.vc-arrow) {
+  width: clamp(24px, 5vw, 32px);
+  height: clamp(24px, 5vw, 32px);
+}
+
+:deep(.vc-weekday) {
+  color: #a0a0a0;
+  font-size: clamp(9px, 1.8vw, 13px);
+  font-weight: 600;
+  text-transform: capitalize;
+  padding-bottom: clamp(4px, 1.5vw, 12px);
+}
+
+:deep(.vc-weeks) {
+  border-top: 1px solid #eaeaea;
+  border-left: 1px solid #eaeaea;
+  margin-top: 8px;
+}
+
+:deep(.vc-day) {
+  border-right: 1px solid #eaeaea;
+  border-bottom: 1px solid #eaeaea;
+  background-color: #ffffff;
+  height: clamp(36px, 10vw, 90px);
+  overflow: hidden;
+}
+
+.day-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: clamp(2px, 0.8vw, 5px);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.day-wrapper:hover { background-color: #f9fafa; }
+.day-wrapper.is-selected { background-color: #f0f3f3; }
+
+.day-number {
+  font-size: clamp(9px, 2vw, 13px);
+  color: #555555;
+  line-height: 1;
+  margin-bottom: clamp(2px, 0.5vw, 5px);
+  flex-shrink: 0;
+}
+
+.day-number.is-today {
+  color: #e11d48;
+  font-weight: 700;
+  background-color: #ffe4e6;
+  padding: 2px clamp(3px, 1vw, 6px);
+  border-radius: 12px;
+}
+
+.day-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
+}
+
+.event-pill {
+  font-size: clamp(7px, 1.4vw, 9px);
+  line-height: 1.2;
+  padding: 1px clamp(2px, 0.6vw, 5px);
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  box-sizing: border-box;
 }
 </style>

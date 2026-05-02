@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, shallowRef } from "vue"
 
 type TimelineItem = {
+  id?: string
   image: string
   date: string
   description: string
@@ -11,7 +12,7 @@ const props = defineProps<{
   items: TimelineItem[]
 }>()
 
-const imageOrientations = ref<{ [key: string]: "horizontal" | "vertical" }>({})
+const imageOrientations = shallowRef<Record<string, "horizontal" | "vertical">>({})
 
 const sortedItems = computed(() =>
   [...props.items].sort(
@@ -26,17 +27,31 @@ const formatDate = (date: string) =>
     day: "numeric",
   }).format(new Date(date))
 
+const formattedDates = computed(() => {
+  const cache: Record<string, string> = {}
+  for (const item of props.items) {
+    cache[item.image] = formatDate(item.date)
+  }
+  return cache
+})
+
 const checkImageOrientation = (src: string, event: Event) => {
   const img = event.target as HTMLImageElement
   const isHorizontal = img.width > img.height
-  imageOrientations.value[src] = isHorizontal ? "horizontal" : "vertical"
+  imageOrientations.value = {
+    ...imageOrientations.value,
+    [src]: isHorizontal ? "horizontal" : "vertical"
+  }
 }
 
-const getObjectClass = (src: string) => {
-  return imageOrientations.value[src] === "horizontal"
+const getImageClass = (src: string) => {
+  const orientation = imageOrientations.value[src]
+  return orientation === "horizontal"
     ? "h-full object-cover"
     : "h-32 object-contain"
 }
+
+const getItemKey = (item: TimelineItem, index: number) => item.id ?? item.image ?? `item-${index}`
 </script>
 
 <template>
@@ -48,7 +63,7 @@ const getObjectClass = (src: string) => {
 
     <div
       v-for="(item, index) in sortedItems"
-      :key="index"
+      :key="getItemKey(item, index)"
       class="timeline-item"
       :class="index % 2 === 0 ? 'left' : 'right'"
     >
@@ -60,14 +75,16 @@ const getObjectClass = (src: string) => {
           <img
             :src="item.image"
             alt=""
-            :class="getObjectClass(item.image)"
+            :class="getImageClass(item.image)"
             class="w-full"
+            loading="lazy"
+            decoding="async"
             @load="checkImageOrientation(item.image, $event)"
           />
         </picture>
 
         <p class="text-xs text-neutral-500 mb-1">
-          {{ formatDate(item.date) }}
+          {{ formattedDates[item.image] }}
         </p>
 
         <p class="text-neutral-800 text-xs">
